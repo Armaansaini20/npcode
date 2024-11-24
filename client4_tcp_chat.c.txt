@@ -1,0 +1,39 @@
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <netinet/in.h>
+#include <stdio.h> 
+#include <string.h> 
+#include <stdlib.h> // For exit()
+int main() 
+{ 
+    char sendline[100], recvline[100]; 
+    int sockfd; 
+    struct sockaddr_in servaddr; 
+    sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+    bzero(&servaddr, sizeof(servaddr)); 
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_port = htons(22000); 
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)); 
+    printf("Connected to chat server.\n");
+    while (1) 
+    { 
+        bzero(sendline, 100); 
+        printf("Enter message: "); 
+        fgets(sendline, 100, stdin); 
+        send(sockfd, sendline, strlen(sendline), 0); 
+        if (strncmp(sendline, "exit", 4) == 0) {
+            printf("Client exited. Closing connection.\n");
+            break;
+        }
+        bzero(recvline, 100); 
+        recv(sockfd, recvline, 100, 0); 
+        printf("Server: %s", recvline); 
+        if (strncmp(recvline, "exit", 4) == 0) {
+            printf("Server exited. Closing connection.\n");
+            break;
+        }
+    }
+    close(sockfd); 
+    return 0; 
+}

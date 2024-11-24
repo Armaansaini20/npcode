@@ -1,0 +1,60 @@
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <netinet/in.h>
+#include <stdio.h> 
+#include <string.h> 
+#include <stdlib.h> // For exit()
+#include <arpa/inet.h> // For inet_ntoa()
+
+int main() 
+{ 
+    char buffer[100]; 
+    int sockfd;
+    struct sockaddr_in servaddr, clientaddr;
+    socklen_t len;
+
+    // Create UDP socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
+
+    // Zero out server address structure
+    bzero(&servaddr, sizeof(servaddr)); 
+
+    // Set server address
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    servaddr.sin_port = htons(22000); 
+
+    // Bind the socket to address and port
+    bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)); 
+    printf("UDP Chat server started. Waiting for client...\n");
+
+    while (1) 
+    { 
+        // Receive message from client
+        bzero(buffer, 100); 
+        len = sizeof(clientaddr);
+        recvfrom(sockfd, buffer, 100, 0, (struct sockaddr *) &clientaddr, &len); 
+        printf("Client: %s", buffer); 
+
+        // Check for exit condition
+        if (strncmp(buffer, "exit", 4) == 0) {
+            printf("Client exited. Shutting down server.\n");
+            break;
+        }
+
+        // Send reply to client
+        printf("Enter message: "); 
+        fgets(buffer, 100, stdin); 
+        sendto(sockfd, buffer, strlen(buffer), 0, (struct sockaddr *) &clientaddr, len); 
+
+        // Check for server exit condition
+        if (strncmp(buffer, "exit", 4) == 0) {
+            printf("Server exited. Shutting down server.\n");
+            break;
+        }
+    }
+
+    // Close the socket
+    close(sockfd); 
+    return 0; 
+}

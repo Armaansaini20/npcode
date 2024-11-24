@@ -1,0 +1,54 @@
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <netinet/in.h>
+#include <stdio.h> 
+#include <string.h> 
+#include <stdlib.h> // For exit()
+
+int main() 
+{ 
+    char sendline[100], recvline[100]; 
+    int sockfd;
+    struct sockaddr_in servaddr;
+
+    // Create UDP socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
+    bzero(&servaddr, sizeof(servaddr)); 
+
+    // Set server address
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_port = htons(22000); 
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+
+    printf("Connected to UDP Chat server.\n");
+
+    while (1) 
+    { 
+        // Input and send message to server
+        bzero(sendline, 100); 
+        printf("Enter message: "); 
+        fgets(sendline, 100, stdin); 
+        sendto(sockfd, sendline, strlen(sendline), 0, (struct sockaddr *) &servaddr, sizeof(servaddr)); 
+
+        // Check for client exit condition
+        if (strncmp(sendline, "exit", 4) == 0) {
+            printf("Client exited. Closing connection.\n");
+            break;
+        }
+
+        // Receive reply from server
+        bzero(recvline, 100); 
+        recvfrom(sockfd, recvline, 100, 0, NULL, NULL); 
+        printf("Server: %s", recvline); 
+
+        // Check for server exit condition
+        if (strncmp(recvline, "exit", 4) == 0) {
+            printf("Server exited. Closing connection.\n");
+            break;
+        }
+    }
+
+    // Close the socket
+    close(sockfd); 
+    return 0; 
+}
